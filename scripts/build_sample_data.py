@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
 import pandas as pd
 
@@ -51,9 +52,81 @@ def main() -> None:
         ]
     )
     candidates.to_csv(SAMPLE_DIR / "candidate_items.csv", index=False)
+    scenes = [
+        {
+            "item_id": "m001",
+            "main_objects": ["large unknown structure", "small human figures", "fog"],
+            "setting": "open field with low visibility",
+            "visible_action": "humans approach an unexplained object",
+            "occluded_or_missing_information": [
+                "what the structure is",
+                "why the humans are approaching it",
+            ],
+            "object_context_incongruity": "ordinary human figures appear before a nonhuman structure",
+            "genre_ambiguity": ["science fiction", "mystery", "drama"],
+            "emotional_tension": ["uncertainty", "awe", "risk"],
+            "implied_question": "What is the object and what will happen when humans interact with it?",
+        },
+        {
+            "item_id": "m002",
+            "main_objects": ["young man", "laptop", "dark room"],
+            "setting": "ordinary indoor workspace",
+            "visible_action": "a founder works alone on a computer",
+            "occluded_or_missing_information": ["what social consequences the system will create"],
+            "object_context_incongruity": "",
+            "genre_ambiguity": ["drama", "biography"],
+            "emotional_tension": ["ambition", "isolation"],
+            "implied_question": "How will the platform change relationships and power?",
+        },
+        {
+            "item_id": "m003",
+            "main_objects": ["young girl", "spirit figures", "bathhouse"],
+            "setting": "fantasy world with unfamiliar rules",
+            "visible_action": "a child enters a strange social environment",
+            "occluded_or_missing_information": [
+                "who controls the spirit world",
+                "how the girl can return home",
+                "which figures are trustworthy",
+            ],
+            "object_context_incongruity": "a human child is placed in a nonhuman institutional world",
+            "genre_ambiguity": ["fantasy", "adventure", "coming-of-age"],
+            "emotional_tension": ["wonder", "danger", "displacement"],
+            "implied_question": "How can the girl survive and leave this hidden world?",
+        },
+        {
+            "item_id": "m004",
+            "main_objects": ["baseball field", "manager", "players"],
+            "setting": "sports organization",
+            "visible_action": "a manager observes a competitive environment",
+            "occluded_or_missing_information": ["whether data can overturn traditional scouting"],
+            "object_context_incongruity": "quantitative reasoning is placed inside a traditional sports setting",
+            "genre_ambiguity": ["sports", "drama", "business"],
+            "emotional_tension": ["pressure", "skepticism"],
+            "implied_question": "Can an unconventional analytic strategy defeat established baseball logic?",
+        },
+        {
+            "item_id": "m005",
+            "main_objects": ["humanoid robot", "glass wall", "research facility"],
+            "setting": "sealed high-tech interior",
+            "visible_action": "a human observes an artificial intelligence through a barrier",
+            "occluded_or_missing_information": [
+                "whether the AI is conscious",
+                "who is evaluating whom",
+                "what is hidden inside the facility",
+            ],
+            "object_context_incongruity": "intimate human interaction occurs through a laboratory containment barrier",
+            "genre_ambiguity": ["science fiction", "thriller", "psychological drama"],
+            "emotional_tension": ["suspicion", "control", "desire"],
+            "implied_question": "Is the human testing the AI, or is the AI testing the human?",
+        },
+    ]
+    scene_path = SAMPLE_DIR / "vlm_scene_interpretations.jsonl"
+    with scene_path.open("w") as file:
+        for scene in scenes:
+            file.write(json.dumps(scene) + "\n")
     print(f"Wrote {SAMPLE_DIR / 'candidate_items.csv'}")
+    print(f"Wrote {scene_path}")
 
 
 if __name__ == "__main__":
     main()
-

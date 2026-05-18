@@ -1,16 +1,16 @@
-# Curiosity-Aware Multimodal Reranker
+# Visual Information Gap Reranker
 
-This repository is an early-stage design science project on multimodal recommender systems. The core idea is to design and evaluate a lightweight reranking artifact that helps recommender systems support exploratory consumption, not only relevance optimization.
+This repository is an early-stage design science project on exploratory recommender systems. The core idea is to design and evaluate a lightweight reranking artifact that uses visual information gaps to encourage exploration, not only relevance optimization.
 
 ## Research Question
 
-Can multimodal curiosity signals improve exploratory recommendation quality beyond relevance-based ranking?
+Can visual information gaps extracted from item images help recommender systems generate recommendations that are relevant enough to understand, but unresolved enough to invite exploration?
 
 ## Motivation
 
-Many recommender systems are optimized for short-term relevance and engagement. In exploratory domains such as movies, short videos, books, courses, and products, users may also value recommendations that are surprising, curiosity-inducing, and meaningfully different from what they already know.
+Many recommender systems optimize for relevance, similarity, and short-term engagement. However, exploratory consumption often begins when an item creates a productive information gap: the user recognizes enough to care, but sees something unresolved enough to want to know more.
 
-This project studies whether a VLM/LLM-enhanced reranker can identify curiosity-triggering features from item metadata, images, trailers, reviews, or short-video keyframes, and use those signals to improve top-k recommendation lists.
+This project treats curiosity as a pre-click mechanism and serendipity as a post-consumption outcome. The artifact uses VLMs as visual scene parsers, not as black-box judges. A VLM converts posters or video keyframes into auditable scene elements such as objects, actions, missing information, incongruity, and implied questions. The reranker then computes a visual information gap score from those elements.
 
 ## Artifact
 
@@ -23,16 +23,19 @@ User history + candidate items
 Baseline relevance score
         |
         v
-Curiosity feature extraction
+VLM scene interpretation
         |
         v
-Curiosity-aware reranking
+Visual information gap scoring
+        |
+        v
+Exploration-aware reranking
         |
         v
 Top-k recommendations + explanations
 ```
 
-The first runnable version uses structured and text metadata only. The next version will add poster/keyframe-based VLM features.
+The first runnable version uses sample VLM-style scene interpretations. The next version will generate those interpretations from TMDb posters or short-video keyframes.
 
 ## Repository Structure
 
@@ -40,9 +43,13 @@ The first runnable version uses structured and text metadata only. The next vers
 .
 ├── docs/
 │   ├── data_plan.md
+│   ├── construct_definition.md
+│   ├── vlm_image_interpretation.md
 │   └── project_proposal.md
 ├── scripts/
 │   ├── build_sample_data.py
+│   ├── download_movielens.py
+│   ├── enrich_tmdb_metadata.py
 │   └── run_demo.py
 ├── src/
 │   └── curiosity_reranker/
@@ -50,7 +57,8 @@ The first runnable version uses structured and text metadata only. The next vers
 │       ├── features.py
 │       ├── metrics.py
 │       ├── rerank.py
-│       └── schema.py
+│       ├── schema.py
+│       └── visual.py
 ├── tests/
 │   └── test_rerank.py
 ├── pyproject.toml
@@ -86,12 +94,12 @@ See [docs/data_plan.md](docs/data_plan.md) for details.
 
 ## Current Status
 
-- [x] Research framing
+- [x] Construct framing: curiosity mechanism vs. serendipity outcome
 - [x] Runnable sample pipeline
-- [x] Baseline reranking logic
+- [x] Visual information gap scoring logic
 - [x] Initial unit tests
-- [ ] MovieLens ingestion
-- [ ] TMDb metadata/poster enrichment
-- [ ] VLM-based visual curiosity extraction
+- [x] MovieLens ingestion script
+- [x] TMDb metadata/poster enrichment script
+- [ ] VLM-based scene interpretation from real posters
 - [ ] Offline evaluation
 - [ ] Human evaluation design

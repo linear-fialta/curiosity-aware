@@ -58,9 +58,14 @@ def semantic_gap_score(item: CandidateItem) -> float:
     return normalize_score(gap)
 
 
-def curiosity_score(item: CandidateItem, user: UserProfile) -> float:
-    novelty = novelty_score(item, user)
+def text_information_gap_score(item: CandidateItem) -> float:
+    """Text-only proxy for unresolved narrative or semantic information."""
     narrative_gap = narrative_incompleteness_score(item.overview)
     semantic_gap = semantic_gap_score(item)
-    return normalize_score((0.4 * novelty) + (0.35 * narrative_gap) + (0.25 * semantic_gap))
+    return normalize_score((0.6 * narrative_gap) + (0.4 * semantic_gap))
 
+
+def moderate_unexpectedness_score(item: CandidateItem, user: UserProfile) -> float:
+    """Reward moderate distance from user taste and avoid random irrelevance."""
+    novelty = novelty_score(item, user)
+    return normalize_score(1.0 - abs(novelty - 0.5) * 2.0)

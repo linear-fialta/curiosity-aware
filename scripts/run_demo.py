@@ -7,6 +7,7 @@ import pandas as pd
 from curiosity_reranker.metrics import average_novelty, intra_list_genre_diversity
 from curiosity_reranker.rerank import rerank_candidates
 from curiosity_reranker.schema import UserProfile
+from curiosity_reranker.visual import attach_visual_interpretations, load_visual_interpretations
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> None:
     candidates = pd.read_csv(ROOT / "data" / "sample" / "candidate_items.csv")
+    scenes = load_visual_interpretations(ROOT / "data" / "sample" / "vlm_scene_interpretations.jsonl")
+    candidates = attach_visual_interpretations(candidates, scenes)
     user = UserProfile(user_id="demo_user", preferred_genres=("Drama", "Biography", "Sci-Fi"))
     ranked = rerank_candidates(candidates, user)
 
@@ -23,8 +26,11 @@ def main() -> None:
     display_cols = [
         "title",
         "baseline_score",
-        "curiosity_score",
+        "visual_information_gap_score",
+        "cross_modal_gap_score",
+        "text_information_gap_score",
         "unexpectedness_score",
+        "moderate_unexpectedness_score",
         "rerank_score",
         "explanation",
     ]
@@ -37,4 +43,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
