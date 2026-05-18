@@ -6,6 +6,8 @@ The VLM should not directly assign a curiosity score. Direct scoring is difficul
 
 Instead, the VLM is used as a visual scene parser. It converts an image into structured observations. The project code then computes visual information gap from those observations.
 
+The recommended open-source model is `Qwen/Qwen2.5-VL-7B-Instruct`. Use `Qwen/Qwen2.5-VL-3B-Instruct` for quick tests when compute is limited. A closed-source model can be used as a validation or teacher model, but the main pipeline should remain reproducible with an open model.
+
 ## VLM Output Schema
 
 For each poster or keyframe, the VLM should return JSON in this format:
@@ -68,3 +70,16 @@ This makes the method more transparent:
 - Human coders can validate VLM scene interpretations.
 - The artifact can be compared against relevance-only and serendipity-oriented baselines.
 
+## Generation Command
+
+After creating TMDb metadata:
+
+```bash
+pip install -e ".[vlm]"
+python scripts/generate_vlm_scene_interpretations.py \
+  --input data/external/tmdb_movies.csv \
+  --output data/external/vlm_scene_interpretations.jsonl \
+  --model Qwen/Qwen2.5-VL-7B-Instruct
+```
+
+For a fast smoke test, add `--limit 20`.

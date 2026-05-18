@@ -44,12 +44,16 @@ The first runnable version uses sample VLM-style scene interpretations. The next
 ├── docs/
 │   ├── data_plan.md
 │   ├── construct_definition.md
+│   ├── algorithm_design.md
+│   ├── experiment_plan.md
 │   ├── vlm_image_interpretation.md
 │   └── project_proposal.md
 ├── scripts/
 │   ├── build_sample_data.py
 │   ├── download_movielens.py
 │   ├── enrich_tmdb_metadata.py
+│   ├── generate_vlm_scene_interpretations.py
+│   ├── run_ablation.py
 │   └── run_demo.py
 ├── src/
 │   └── curiosity_reranker/
@@ -58,6 +62,7 @@ The first runnable version uses sample VLM-style scene interpretations. The next
 │       ├── metrics.py
 │       ├── rerank.py
 │       ├── schema.py
+│       ├── vig_rerank.py
 │       └── visual.py
 ├── tests/
 │   └── test_rerank.py
@@ -73,6 +78,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 python scripts/build_sample_data.py
 python scripts/run_demo.py
+python scripts/run_ablation.py
 pytest
 ```
 
@@ -86,6 +92,16 @@ export TMDB_API_KEY="your_tmdb_key"
 python scripts/enrich_tmdb_metadata.py
 ```
 
+To generate real visual scene interpretations with Qwen2.5-VL:
+
+```bash
+pip install -e ".[vlm]"
+python scripts/generate_vlm_scene_interpretations.py \
+  --input data/external/tmdb_movies.csv \
+  --output data/external/vlm_scene_interpretations.jsonl \
+  --model Qwen/Qwen2.5-VL-7B-Instruct
+```
+
 ## Planned Data Sources
 
 The recommended first dataset is MovieLens plus movie posters and metadata from TMDb. This combination is small enough to implement quickly, but rich enough to support multimodal recommendation experiments.
@@ -97,6 +113,8 @@ See [docs/data_plan.md](docs/data_plan.md) for details.
 - [x] Construct framing: curiosity mechanism vs. serendipity outcome
 - [x] Runnable sample pipeline
 - [x] Visual information gap scoring logic
+- [x] Nonlinear VIG-Rerank algorithm
+- [x] Ablation script
 - [x] Initial unit tests
 - [x] MovieLens ingestion script
 - [x] TMDb metadata/poster enrichment script

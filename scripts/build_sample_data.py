@@ -49,6 +49,13 @@ def main() -> None:
                 "overview": "A programmer evaluates an artificial intelligence experiment and uncovers hidden motives inside a sealed research facility.",
                 "baseline_score": 0.80,
             },
+            {
+                "item_id": "m006",
+                "title": "Blade Runner 2049",
+                "genres": "Sci-Fi|Drama|Mystery",
+                "overview": "A detective follows a hidden clue that may reveal the origin of a long-buried artificial life mystery.",
+                "baseline_score": 0.83,
+            },
         ]
     )
     candidates.to_csv(SAMPLE_DIR / "candidate_items.csv", index=False)
@@ -118,6 +125,21 @@ def main() -> None:
             "genre_ambiguity": ["science fiction", "thriller", "psychological drama"],
             "emotional_tension": ["suspicion", "control", "desire"],
             "implied_question": "Is the human testing the AI, or is the AI testing the human?",
+        },
+        {
+            "item_id": "m006",
+            "main_objects": ["detective", "desert city", "giant holographic figure"],
+            "setting": "futuristic urban landscape with artificial light",
+            "visible_action": "a solitary detective confronts a large synthetic figure",
+            "occluded_or_missing_information": [
+                "what the clue reveals",
+                "whether the figure is human or artificial",
+                "why the city appears abandoned",
+            ],
+            "object_context_incongruity": "a small human-like detective appears beneath an oversized synthetic figure",
+            "genre_ambiguity": ["science fiction", "mystery", "noir"],
+            "emotional_tension": ["isolation", "suspicion", "longing"],
+            "implied_question": "What hidden identity or origin is the detective about to uncover?",
         },
     ]
     scene_path = SAMPLE_DIR / "vlm_scene_interpretations.jsonl"

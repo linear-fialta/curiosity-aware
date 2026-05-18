@@ -16,7 +16,7 @@ Existing serendipity-oriented recommenders usually evaluate whether a recommenda
 
 ## Proposed Artifact
 
-This project designs a VLM-assisted reranking artifact. Given a set of candidate items from an existing recommender model, a VLM parses each image into structured scene observations such as objects, actions, missing information, incongruity, genre ambiguity, and implied questions. The artifact then computes a visual information gap score and reranks candidates by jointly considering relevance, visual information gap, moderate unexpectedness, and redundancy.
+This project designs a VLM-assisted reranking artifact. Given a set of candidate items from an existing recommender model, a VLM parses each image into structured scene observations such as objects, actions, missing information, incongruity, genre ambiguity, and implied questions. The artifact then computes a visual information gap score and applies VIG-Rerank, a nonlinear listwise reranking algorithm that jointly considers relevance, visual information gap, taste-adjacent novelty, cross-modal gap, and list redundancy.
 
 The VLM does not directly score curiosity. It only produces auditable visual interpretations. The construct score is computed by the artifact.
 
@@ -26,8 +26,8 @@ The VLM does not directly score curiosity. It only produces auditable visual int
 2. Enrich items with metadata such as overview, genre, poster, and tagline.
 3. Use a VLM to parse posters or keyframes into structured visual observations.
 4. Compute visual information gap from the parsed observations.
-5. Rerank candidate items using a weighted objective.
-6. Compare the baseline list with the visual-gap-aware list.
+5. Rerank candidate items using VIG-Rerank.
+6. Compare against relevance-only, linear reranking, no-visual-gap, and no-listwise baselines.
 
 ## Expected Evaluation
 
@@ -37,7 +37,7 @@ Offline metrics include relevance, novelty, diversity, unexpectedness, and list 
 
 ## Expected Contribution
 
-The project contributes a design artifact for exploratory recommendation. The conceptual contribution is to distinguish curiosity as an exploration mechanism from serendipity as a post-consumption outcome. The technical contribution is a transparent VLM-assisted method for operationalizing visual information gaps.
+The project contributes a design artifact for exploratory recommendation. The conceptual contribution is to distinguish curiosity as an exploration mechanism from serendipity as a post-consumption outcome. The technical contribution is VIG-Rerank, a transparent VLM-assisted method that operationalizes visual information gaps and optimizes a relevance-novelty sweet spot rather than maximizing novelty monotonically.
 
 ## Fit With Prior Experience
 

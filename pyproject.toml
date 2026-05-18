@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "curiosity-reranker"
 version = "0.1.0"
-description = "A curiosity-aware reranking artifact for exploratory recommender systems."
+description = "A visual information gap reranking artifact for exploratory recommender systems."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -16,6 +16,13 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+]
+vlm = [
+    "accelerate>=0.26",
+    "pillow>=10.0",
+    "qwen-vl-utils>=0.0.8",
+    "torch>=2.1",
+    "transformers>=4.49",
 ]
 
 [tool.setuptools.packages.find]

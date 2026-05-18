@@ -4,6 +4,7 @@ import pandas as pd
 
 from curiosity_reranker.rerank import rerank_candidates
 from curiosity_reranker.schema import UserProfile
+from curiosity_reranker.vig_rerank import vig_rerank_candidates
 from curiosity_reranker.visual import attach_visual_interpretations, visual_information_gap_score
 from curiosity_reranker.schema import VisualSceneInterpretation
 
@@ -82,3 +83,48 @@ def test_attach_visual_interpretations_adds_gap_columns() -> None:
     assert "visual_information_gap_score" in enriched.columns
     assert "cross_modal_gap_score" in enriched.columns
     assert "visual_reason" in enriched.columns
+
+
+def test_vig_rerank_adds_sweet_spot_and_listwise_scores() -> None:
+    candidates = pd.DataFrame(
+        [
+            {
+                "item_id": "1",
+                "title": "Safe Drama",
+                "genres": "Drama",
+                "overview": "A familiar drama.",
+                "baseline_score": 0.9,
+                "visual_information_gap_score": 0.2,
+                "cross_modal_gap_score": 0.2,
+                "visual_reason": "the image is familiar",
+            },
+            {
+                "item_id": "2",
+                "title": "Taste Adjacent Mystery",
+                "genres": "Drama|Mystery",
+                "overview": "A hidden event is discovered.",
+                "baseline_score": 0.82,
+                "visual_information_gap_score": 0.9,
+                "cross_modal_gap_score": 0.8,
+                "visual_reason": "the image implies an unresolved question",
+            },
+            {
+                "item_id": "3",
+                "title": "Too Distant Fantasy",
+                "genres": "Fantasy|Adventure",
+                "overview": "A magical quest unfolds.",
+                "baseline_score": 0.8,
+                "visual_information_gap_score": 0.9,
+                "cross_modal_gap_score": 0.8,
+                "visual_reason": "the image implies an unresolved question",
+            },
+        ]
+    )
+    user = UserProfile(user_id="u1", preferred_genres=("Drama",))
+    ranked = vig_rerank_candidates(candidates, user, top_k=2)
+
+    assert list(ranked["vig_rank"]) == [1, 2]
+    assert "sweet_spot_score" in ranked.columns
+    assert "vig_item_score" in ranked.columns
+    assert "vig_listwise_score" in ranked.columns
+    assert ranked.iloc[0]["title"] == "Taste Adjacent Mystery"

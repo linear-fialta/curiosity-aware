@@ -1,0 +1,6 @@
+variant,avg_baseline_relevance,avg_visual_gap,avg_novelty,genre_diversity,top_titles
+relevance_baseline,0.8533333333333334,0.8000000000000002,0.4444444444444445,0.5,The Social Network | Arrival | Blade Runner 2049
+linear_gap_rerank,0.8233333333333333,0.9666666666666668,0.5,0.3333333333333333,Arrival | Blade Runner 2049 | Ex Machina
+vig_rerank,0.8133333333333334,0.9166666666666666,0.5,0.7000000000000001,Blade Runner 2049 | Ex Machina | Moneyball
+vig_no_listwise,0.8233333333333333,0.9666666666666668,0.5,0.3333333333333333,Blade Runner 2049 | Arrival | Ex Machina
+vig_no_visual,0.8066666666666666,0.0,0.6666666666666666,0.9333333333333332,Arrival | Spirited Away | Moneyball
