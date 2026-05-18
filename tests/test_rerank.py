@@ -7,6 +7,7 @@ from curiosity_reranker.schema import UserProfile
 from curiosity_reranker.vig_rerank import vig_rerank_candidates
 from curiosity_reranker.visual import attach_visual_interpretations, visual_information_gap_score
 from curiosity_reranker.schema import VisualSceneInterpretation
+from curiosity_reranker.baseline import fit_matrix_factorization, generate_mf_candidates, leave_one_out_split
 
 
 def test_rerank_adds_curiosity_columns() -> None:
@@ -128,3 +129,30 @@ def test_vig_rerank_adds_sweet_spot_and_listwise_scores() -> None:
     assert "vig_item_score" in ranked.columns
     assert "vig_listwise_score" in ranked.columns
     assert ranked.iloc[0]["title"] == "Taste Adjacent Mystery"
+
+
+def test_matrix_factorization_generates_candidates() -> None:
+    ratings = pd.DataFrame(
+        [
+            {"userId": 1, "movieId": 10, "rating": 5.0, "timestamp": 1},
+            {"userId": 1, "movieId": 11, "rating": 4.0, "timestamp": 2},
+            {"userId": 1, "movieId": 12, "rating": 3.0, "timestamp": 3},
+            {"userId": 2, "movieId": 10, "rating": 4.0, "timestamp": 1},
+            {"userId": 2, "movieId": 12, "rating": 5.0, "timestamp": 2},
+            {"userId": 2, "movieId": 13, "rating": 3.0, "timestamp": 3},
+        ]
+    )
+    movies = pd.DataFrame(
+        [
+            {"movieId": 10, "title": "A", "genres": "Drama", "overview": "A drama"},
+            {"movieId": 11, "title": "B", "genres": "Mystery", "overview": "A mystery"},
+            {"movieId": 12, "title": "C", "genres": "Sci-Fi", "overview": "A sci-fi story"},
+            {"movieId": 13, "title": "D", "genres": "Comedy", "overview": "A comedy"},
+        ]
+    )
+    train, test = leave_one_out_split(ratings, min_interactions=3)
+    model = fit_matrix_factorization(train, n_factors=4, epochs=1, seed=7)
+    candidates = generate_mf_candidates(model, train, test, movies, candidates_per_user=2)
+
+    assert not candidates.empty
+    assert {"user_id", "item_id", "baseline_score", "is_relevant"}.issubset(candidates.columns)

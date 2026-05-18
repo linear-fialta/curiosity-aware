@@ -43,7 +43,10 @@ This step prevents the reranker from filling the list with visually intriguing b
 
 The repository supports these comparison conditions:
 
-- relevance-only baseline
+- matrix-factorization relevance baseline
+- MMR relevance-diversity baseline
+- serendipity-style relevance + unexpectedness baseline
+- direct VLM proxy baseline
 - linear visual-gap reranker
 - VIG-Rerank
 - VIG-Rerank without listwise diversity
@@ -54,4 +57,3 @@ The repository supports these comparison conditions:
 Calling a VLM only produces structured scene observations. The scoring function, sweet-spot transformation, and listwise optimization are implemented in the repository.
 
 The project can therefore evaluate whether visual information gaps improve exploratory recommendation beyond relevance, diversity, or generic serendipity heuristics.
-

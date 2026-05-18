@@ -54,10 +54,13 @@ The first runnable version uses sample VLM-style scene interpretations. The next
 │   ├── enrich_tmdb_metadata.py
 │   ├── generate_vlm_scene_interpretations.py
 │   ├── run_ablation.py
+│   ├── run_movielens_experiment.py
 │   └── run_demo.py
 ├── src/
 │   └── curiosity_reranker/
 │       ├── __init__.py
+│       ├── baseline.py
+│       ├── comparison.py
 │       ├── features.py
 │       ├── metrics.py
 │       ├── rerank.py
@@ -82,6 +85,40 @@ python scripts/run_ablation.py
 pytest
 ```
 
+## Run the MovieLens Experiment
+
+This command trains a matrix-factorization baseline, generates candidate recommendations, and compares reranking variants:
+
+```bash
+python scripts/download_movielens.py
+PYTHONPATH=src python scripts/run_movielens_experiment.py \
+  --max-users 50 \
+  --candidate-k 100 \
+  --top-k 10 \
+  --epochs 8 \
+  --factors 32
+```
+
+Outputs are written to:
+
+```text
+data/processed/movielens_experiment/
+├── mf_candidates.csv
+├── summary_metrics.csv
+└── *_rankings.csv
+```
+
+The experiment compares:
+
+- `mf_relevance`: matrix-factorization relevance baseline
+- `mmr`: relevance-diversity reranking baseline
+- `serendipity`: relevance + unexpectedness baseline
+- `linear_gap`: simple weighted gap reranker
+- `direct_vlm_proxy`: direct visual-gap score baseline
+- `vig_rerank`: nonlinear sweet-spot + listwise VIG-Rerank
+- `vig_no_visual`: visual gap ablation
+- `vig_no_listwise`: listwise optimization ablation
+
 ## Data Setup
 
 For the full project, start with MovieLens and then enrich items with TMDb metadata:
@@ -102,6 +139,17 @@ python scripts/generate_vlm_scene_interpretations.py \
   --model Qwen/Qwen2.5-VL-7B-Instruct
 ```
 
+Then rerun the MovieLens experiment with metadata and VLM scene fields:
+
+```bash
+PYTHONPATH=src python scripts/run_movielens_experiment.py \
+  --metadata data/external/tmdb_movies.csv \
+  --scenes data/external/vlm_scene_interpretations.jsonl \
+  --max-users 100 \
+  --candidate-k 100 \
+  --top-k 10
+```
+
 ## Planned Data Sources
 
 The recommended first dataset is MovieLens plus movie posters and metadata from TMDb. This combination is small enough to implement quickly, but rich enough to support multimodal recommendation experiments.
@@ -115,6 +163,8 @@ See [docs/data_plan.md](docs/data_plan.md) for details.
 - [x] Visual information gap scoring logic
 - [x] Nonlinear VIG-Rerank algorithm
 - [x] Ablation script
+- [x] Matrix-factorization baseline
+- [x] End-to-end MovieLens experiment runner
 - [x] Initial unit tests
 - [x] MovieLens ingestion script
 - [x] TMDb metadata/poster enrichment script
