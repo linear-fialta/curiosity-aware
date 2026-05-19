@@ -13,13 +13,13 @@ from curiosity_reranker.schema import CandidateItem, UserProfile
 @dataclass(frozen=True)
 class VIGRerankConfig:
     relevance_power: float = 1.0
-    visual_gap_power: float = 0.8
+    visual_gap_power: float = 1.0
     text_gap_power: float = 0.3
     cross_modal_gap_power: float = 0.3
-    target_distance: float = 0.5
-    distance_sigma: float = 0.22
-    diversity_penalty: float = 0.32
-    coverage_bonus: float = 0.04
+    target_distance: float = 0.35
+    distance_sigma: float = 0.35
+    diversity_penalty: float = 0.08
+    coverage_bonus: float = 0.03
     epsilon: float = 1e-6
 
 
