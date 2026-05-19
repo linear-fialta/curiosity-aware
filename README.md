@@ -212,6 +212,23 @@ The latest run shows that visual-gap-aware methods outperform MF, MMR, serendipi
 
 See [docs/pilot_results.md](docs/pilot_results.md) for the full table and interpretation.
 
+## Human Validation
+
+The repository includes a 50-poster annotation set for checking whether the VLM-derived visual information gap score aligns with human judgment:
+
+```text
+annotation/
+├── README.md
+├── visual_gap_annotation_50.csv
+└── visual_gap_annotation_50.html
+```
+
+The sample is stratified across low, middle, and high VLM visual-gap scores. Regenerate it with:
+
+```bash
+PYTHONPATH=src python scripts/sample_visual_annotation_set.py --n 50 --seed 20260520
+```
+
 ## Current Limitations
 
 - The VLM coverage is partial: 2,998 posters, not the full TMDb-enriched set.
