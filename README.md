@@ -1,8 +1,12 @@
 # Visual Information Gap Reranker
 
-This repository implements a reproducible pilot study for exploratory recommendation. It extends the author's WITS 2025 paper, **"Trailers or Thieves? How Content Similarity Affects Continuance and Exploration for Condensed Clips in Algorithmic Feeds"**, from text-based narrative gaps in algorithmic feeds to image-based information gaps in recommender-system design.
+This is my implementation for a research pilot on visual information gaps in exploratory recommender systems.
+
+The project extends my WITS 2025 paper, **"Trailers or Thieves? How Content Similarity Affects Continuance and Exploration for Condensed Clips in Algorithmic Feeds"**, from text-based narrative gaps in algorithmic feeds to image-based information gaps in recommender-system design.
 
 The project asks whether movie posters contain structured visual cues that help explain why a user may explore an item that is relevant, but not merely redundant. The current implementation uses MovieLens ratings, TMDb metadata, Qwen2.5-VL scene parsing, a matrix-factorization candidate generator, and several reranking baselines.
+
+Author: Yachen Guo
 
 ## Research Question
 
@@ -71,10 +75,11 @@ Candidates + visual features
 │   └── visual.py
 ├── tests/
 │   └── test_rerank.py
-└── pyproject.toml
+├── pyproject.toml
+└── train.py
 ```
 
-## Installation
+## Environment Settings
 
 ```bash
 python -m venv .venv
@@ -87,6 +92,18 @@ Optional VLM dependencies:
 ```bash
 pip install -e ".[vlm]"
 ```
+
+The pilot uses Python 3.10+ and Qwen2.5-VL for poster parsing.
+
+## Dataset
+
+Dataset:
+
+- [MovieLens `ml-latest-small`](https://grouplens.org/datasets/movielens/)
+- TMDb metadata and poster URLs, collected with a local TMDb API key
+- Qwen2.5-VL poster scene interpretations generated from the TMDb posters
+
+The generated TMDb and VLM files are not committed to the repository. The scripts below reproduce the local files used by the pilot.
 
 ## Data Preparation
 
@@ -127,7 +144,7 @@ The VLM script is also resumable. Re-running the same command skips completed `i
 Run the full MovieLens experiment with VLM scene fields:
 
 ```bash
-PYTHONPATH=src python scripts/run_movielens_experiment.py \
+python train.py \
   --metadata data/external/tmdb_movies.csv \
   --scenes data/external/vlm_scene_interpretations.jsonl \
   --max-users 100 \
@@ -137,6 +154,8 @@ PYTHONPATH=src python scripts/run_movielens_experiment.py \
   --factors 32 \
   --seed 42
 ```
+
+The same experiment can also be run through `scripts/run_movielens_experiment.py`; the command-line arguments are defined in its `parse_args` block.
 
 Outputs:
 
@@ -199,3 +218,9 @@ See [docs/pilot_results.md](docs/pilot_results.md) for the full table and interp
 - Poster-level visual interpretation is noisy and should be validated by human coding on a sample.
 - Offline HitRate/NDCG evaluate held-out MovieLens behavior, not perceived curiosity directly.
 - The next step is a small human evaluation comparing baseline and VIG-ranked lists.
+
+## Acknowledgement
+
+This project is partly motivated by prior work on unexpected recommendation, serendipity, and cross-domain recommendation. It is designed as a compact research artifact for testing whether VLM-derived visual information gaps can support exploration-aware reranking.
+
+Last Update: 2026/05/20
