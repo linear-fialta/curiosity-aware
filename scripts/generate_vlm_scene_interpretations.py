@@ -12,16 +12,16 @@ SCENE_PROMPT = """You are helping construct variables for an exploratory recomme
 Analyze the image as a visual scene. Do not rate curiosity. Do not recommend the item.
 
 Return only valid JSON with these fields:
-- main_objects: list of visible objects, characters, or symbols
+- main_objects: list of up to 5 visible objects, characters, or symbols
 - setting: short description of the visual setting
 - visible_action: what action or relation is visible
-- occluded_or_missing_information: list of important unresolved visual information
+- occluded_or_missing_information: list of up to 5 important unresolved visual information items
 - object_context_incongruity: one sentence if objects appear in an unexpected context, otherwise empty string
-- genre_ambiguity: list of plausible genres suggested by the image
-- emotional_tension: list of emotions or tensions implied by the image
+- genre_ambiguity: list of up to 3 plausible genres suggested by the image
+- emotional_tension: list of up to 3 emotions or tensions implied by the image
 - implied_question: one question a viewer may want answered after seeing the image
 
-Focus on what is visible in the image and what remains unresolved."""
+Do not repeat list items. Do not wrap the JSON in markdown fences. Focus on what is visible in the image and what remains unresolved."""
 
 
 def main() -> None:
@@ -104,7 +104,12 @@ def interpret_image(
         return_tensors="pt",
     ).to(model.device)
 
-    generated_ids = model.generate(**inputs, max_new_tokens=512)
+    generated_ids = model.generate(
+        **inputs,
+        max_new_tokens=384,
+        do_sample=False,
+        repetition_penalty=1.08,
+    )
     trimmed_ids = [
         output_ids[len(input_ids) :]
         for input_ids, output_ids in zip(inputs.input_ids, generated_ids)
@@ -120,12 +125,24 @@ def interpret_image(
 
 
 def _extract_json(text: str) -> dict:
+    text = _strip_markdown_fence(text.strip())
     start = text.find("{")
     end = text.rfind("}")
     if start == -1 or end == -1 or end <= start:
         raise ValueError(f"Model did not return JSON: {text[:200]}")
     payload = json.loads(text[start : end + 1])
     return _normalize_payload(payload)
+
+
+def _strip_markdown_fence(text: str) -> str:
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        return "\n".join(lines).strip()
+    return text
 
 
 def _get_item_id(row: pd.Series) -> str:
