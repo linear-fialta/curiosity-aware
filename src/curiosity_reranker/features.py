@@ -33,8 +33,12 @@ def genre_overlap(item_genres: Iterable[str], preferred_genres: Iterable[str]) -
     return len(item_set & preferred_set) / len(item_set | preferred_set)
 
 
+def genre_unexpectedness(item_genres: Iterable[str], preferred_genres: Iterable[str]) -> float:
+    return 1.0 - genre_overlap(item_genres, preferred_genres)
+
+
 def novelty_score(item: CandidateItem, user: UserProfile) -> float:
-    return 1.0 - genre_overlap(item.genres, user.preferred_genres)
+    return genre_unexpectedness(item.genres, user.preferred_genres)
 
 
 def narrative_incompleteness_score(text: str) -> float:

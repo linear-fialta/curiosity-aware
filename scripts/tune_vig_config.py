@@ -13,6 +13,7 @@ from curiosity_reranker.baseline import (
     leave_one_out_split,
     load_movielens_with_optional_metadata,
 )
+from curiosity_reranker.features import genre_unexpectedness
 from curiosity_reranker.metrics import summarize_rankings
 from curiosity_reranker.vig_rerank import VIGRerankConfig, vig_rerank_candidates
 from curiosity_reranker.visual import attach_visual_interpretations, load_visual_interpretations
@@ -155,12 +156,9 @@ def _selection_score(metrics: dict[str, float]) -> float:
 
 def _attach_unexpectedness(candidates: pd.DataFrame, user_profile) -> pd.DataFrame:
     copied = candidates.copy()
-    preferred = {genre.lower() for genre in user_profile.preferred_genres}
     values = []
     for genres in copied["genres"].tolist():
-        current = {genre.lower() for genre in str(genres).split("|") if genre}
-        union = current | preferred
-        values.append(0.0 if not union else 1.0 - len(current & preferred) / len(union))
+        values.append(genre_unexpectedness(str(genres).split("|"), user_profile.preferred_genres))
     copied["unexpectedness_score"] = values
     return copied
 

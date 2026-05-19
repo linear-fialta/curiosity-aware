@@ -17,6 +17,7 @@ from curiosity_reranker.comparison import (
     mmr_rerank_candidates,
     serendipity_rerank_candidates,
 )
+from curiosity_reranker.features import genre_unexpectedness
 from curiosity_reranker.metrics import summarize_rankings
 from curiosity_reranker.rerank import rerank_candidates
 from curiosity_reranker.vig_rerank import VIGRerankConfig, vig_rerank_candidates
@@ -136,12 +137,9 @@ def _zero_visual_gap(candidates: pd.DataFrame) -> pd.DataFrame:
 
 def _attach_unexpectedness(candidates: pd.DataFrame, user_profile) -> pd.DataFrame:
     copied = candidates.copy()
-    preferred = {genre.lower() for genre in user_profile.preferred_genres}
     values = []
     for genres in copied["genres"].tolist():
-        current = {genre.lower() for genre in str(genres).split("|") if genre}
-        union = current | preferred
-        values.append(0.0 if not union else 1.0 - len(current & preferred) / len(union))
+        values.append(genre_unexpectedness(str(genres).split("|"), user_profile.preferred_genres))
     copied["unexpectedness_score"] = values
     return copied
 

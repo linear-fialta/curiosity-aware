@@ -155,7 +155,7 @@ def _tokens(text: str) -> set[str]:
     }
 
 
-def _as_text_list(value) -> list[str]:
+def _as_text_list(value: object) -> list[str]:
     if value is None:
         return []
     if isinstance(value, str):

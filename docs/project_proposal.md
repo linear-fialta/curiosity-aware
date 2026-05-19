@@ -14,6 +14,8 @@ Recommender systems often prioritize relevance, similarity, and short-term engag
 
 Existing serendipity-oriented recommenders usually evaluate whether a recommendation is unexpected and useful after consumption. They less directly explain the pre-click mechanism that motivates a user to explore an unexpected item. This project focuses on that mechanism by operationalizing visual information gaps in posters or keyframes.
 
+The project follows directly from my WITS 2025 paper on condensed clips in algorithmic feeds. That paper studies how dynamic similarity and narrative completeness shape continuance and exploration. This project translates the same theoretical logic into a design artifact: if narrative gaps can motivate exploration in short-video feeds, visual gaps may serve a similar role in poster- or keyframe-based recommendation.
+
 ## Proposed Artifact
 
 This project designs a VLM-assisted reranking artifact. Given a set of candidate items from an existing recommender model, a VLM parses each image into structured scene observations such as objects, actions, missing information, incongruity, genre ambiguity, and implied questions. The artifact then computes a visual information gap score and applies VIG-Rerank, a nonlinear listwise reranking algorithm that jointly considers relevance, visual information gap, taste-adjacent novelty, cross-modal gap, and list redundancy.
@@ -33,7 +35,7 @@ The VLM does not directly score curiosity. It only produces auditable visual int
 
 The project will use both offline and human evaluation.
 
-Offline metrics include relevance, novelty, diversity, unexpectedness, and list redundancy. Human evaluation will compare whether users perceive visual-gap-aware lists as more exploration-inducing while remaining relevant.
+Offline metrics include HitRate@K, NDCG@K, baseline relevance retention, novelty, diversity, and visual-gap intensity. Human evaluation will compare whether users perceive visual-gap-aware lists as more exploration-inducing while remaining relevant.
 
 ## Expected Contribution
 

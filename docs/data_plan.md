@@ -1,138 +1,123 @@
 # Data Plan
 
-This project should start with a dataset that is public, easy to reproduce, and naturally multimodal. The goal is not to build the largest possible system, but to show a complete design science workflow: artifact design, implementation, evaluation, and research contribution.
+The empirical setting is intentionally modest: a public recommender-system benchmark enriched with poster-level visual information. The objective is not to maximize scale, but to keep the design artifact reproducible and easy to inspect.
 
-## Recommended Dataset: MovieLens + TMDb
+## Primary Data Sources
 
-### 1. MovieLens Ratings
+### MovieLens
 
-Use MovieLens as the behavioral backbone.
-
-Required files:
+MovieLens provides the behavioral backbone:
 
 - `ratings.csv`: user-item interactions
-- `movies.csv`: movie titles and genres
+- `movies.csv`: titles and genres
 - `links.csv`: mapping from MovieLens IDs to TMDb IDs
 
-Suggested starting version:
-
-- `ml-latest-small` for fast iteration and local experiments
-- `ml-25m` later if larger-scale evaluation is needed
-
-Repository command:
+The current implementation uses `ml-latest-small` for fast iteration. Larger MovieLens releases can be substituted once the pipeline is stable.
 
 ```bash
 python scripts/download_movielens.py
 ```
 
-Why it works:
+### TMDb
 
-- Standard recommender-system benchmark
-- Easy to reproduce
-- Good enough for offline evaluation
-- Links to external movie metadata and posters
+TMDb supplies item metadata and poster URLs:
 
-### 2. TMDb Movie Metadata
+- `overview`
+- `tagline`
+- `release_date`
+- `popularity`
+- `poster_url`
 
-Use TMDb to enrich each movie with multimodal and semantic features.
-
-Useful fields:
-
-- `overview`: plot description
-- `poster_path`: movie poster image
-- `tagline`: short promotional text
-- `genres`: semantic categories
-- `release_date`: temporal context
-- `popularity`: market-level attention signal
-
-Why it matters:
-
-- Posters allow VLM-based visual analysis.
-- Overviews and taglines allow LLM-based narrative and curiosity analysis.
-- Movie recommendation is easy to explain to nontechnical readers.
-
-Repository command:
+The enrichment script is resumable and writes a cache every 25 records.
 
 ```bash
-export TMDB_API_KEY="your_tmdb_key"
+export TMDB_API_KEY="your_tmdb_v3_api_key"
 python scripts/enrich_tmdb_metadata.py
 ```
 
-The enrichment script reads `data/raw/ml-latest-small/links.csv` and writes `data/external/tmdb_movies.csv`.
+Outputs:
 
-### 3. Optional Trailer or Keyframe Data
+```text
+data/external/tmdb_movie_cache.csv
+data/external/tmdb_movies.csv
+```
 
-If time allows, add trailer keyframes.
+### VLM Scene Interpretations
 
-Possible features:
+Poster URLs are parsed with Qwen2.5-VL into structured visual fields. The model is not asked to recommend movies or score curiosity directly. It only extracts scene information that is later converted into visual-gap variables.
 
-- visual novelty
-- scene diversity
-- unresolved narrative cue
-- emotional contrast
-- semantic gap between title, poster, and overview
-
-This connects strongly to prior work on condensed clips and narrative completeness.
-
-## Minimal Data Schema
-
-The first version only needs one candidate-item table.
+Required fields:
 
 ```text
 item_id
-title
-genres
-overview
-poster_url
-baseline_score
+main_objects
+setting
+visible_action
+occluded_or_missing_information
+object_context_incongruity
+genre_ambiguity
+emotional_tension
+implied_question
 ```
 
-A later version can add user histories:
+Generation command:
+
+```bash
+python scripts/generate_vlm_scene_interpretations.py \
+  --input data/external/tmdb_movies.csv \
+  --output data/external/vlm_scene_interpretations.jsonl \
+  --model Qwen/Qwen2.5-VL-3B-Instruct \
+  --limit 3000
+```
+
+The script supports resume-by-default behavior.
+
+## Derived Tables
+
+`scripts/run_movielens_experiment.py` creates:
+
+```text
+data/processed/movielens_experiment/mf_candidates.csv
+data/processed/movielens_experiment/summary_metrics.csv
+data/processed/movielens_experiment/*_rankings.csv
+```
+
+The candidate table contains:
 
 ```text
 user_id
 item_id
-rating
-timestamp
+movieId
+title
+genres
+overview
+baseline_score
+predicted_rating
+heldout_item
+is_relevant
+visual_information_gap_score
+cross_modal_gap_score
+visual_reason
 ```
 
-## Curiosity Signals
+## Feature Construction
 
-Initial text-only proxies:
+The core visual-gap score uses five components:
 
-- `novelty_score`: how different an item is from the user's watched genres
-- `semantic_gap_score`: whether title, genre, and overview create an information gap
-- `narrative_incompleteness_score`: whether the overview leaves unresolved questions
-- `unexpectedness_score`: how far the item is from the user's usual profile while staying relevant
+- missing or occluded information
+- unresolved visible action
+- object-context incongruity
+- genre ambiguity
+- emotional tension
 
-Later VLM features:
+The cross-modal gap compares VLM-derived visual terms with title, genre, and overview terms. This is a coarse proxy rather than a semantic entailment model; it is intentionally transparent for a first artifact.
 
-- poster visual complexity
-- unusual visual objects
-- emotion/style contrast
-- mismatch between poster and genre
-- visual ambiguity
+## Validation Plan
 
-## Evaluation Plan
+The next validation step is human coding on a random poster sample:
 
-### Offline Evaluation
+- whether the VLM extracted visible objects correctly
+- whether the implied question is grounded in the image
+- whether missing information and emotional tension are plausible
+- whether visual-gap scores correlate with perceived curiosity
 
-Compare baseline top-k recommendation with curiosity-aware reranking.
-
-Metrics:
-
-- relevance: NDCG, hit rate, recall
-- exploration: novelty, intra-list diversity, unexpectedness
-- balance: relevance-diversity frontier
-
-### Human Evaluation
-
-Show participants two recommendation lists and ask:
-
-- Which list makes you more interested in exploring?
-- Which list feels more surprising but still relevant?
-- Which explanation makes you more likely to click?
-
-### Design Science Contribution
-
-The contribution is not only a better metric. It is an artifact that operationalizes curiosity in recommender systems and demonstrates how multimodal generative AI can support exploratory consumption.

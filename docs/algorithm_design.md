@@ -27,6 +27,17 @@ SweetSpot(d) = exp(-((d - d*)^2) / (2 * sigma^2))
 
 This implements the idea that exploratory recommendation should not maximize novelty monotonically. Items that are too familiar are repetitive, while items that are too distant may be uninterpretable. The best candidates are taste-adjacent.
 
+The current tuned default is:
+
+```text
+a = 1.0
+b = 1.0
+c = 0.3
+d = 0.3
+d* = 0.35
+sigma = 0.35
+```
+
 ## Listwise Selection
 
 After computing item-level scores, the algorithm greedily selects items into the final list:
@@ -38,6 +49,8 @@ argmax_i VIGItemScore(u, i)
 ```
 
 This step prevents the reranker from filling the list with visually intriguing but redundant items.
+
+The current tuned default uses `lambda = 0.08` and `eta = 0.03`.
 
 ## Baselines
 
@@ -57,3 +70,5 @@ The repository supports these comparison conditions:
 Calling a VLM only produces structured scene observations. The scoring function, sweet-spot transformation, and listwise optimization are implemented in the repository.
 
 The project can therefore evaluate whether visual information gaps improve exploratory recommendation beyond relevance, diversity, or generic serendipity heuristics.
+
+The tuning script (`scripts/tune_vig_config.py`) searches a small parameter grid over visual-gap weight, target distance, and listwise penalties. It does not rerun VLM inference.

@@ -6,7 +6,7 @@ The VLM should not directly assign a curiosity score. Direct scoring is difficul
 
 Instead, the VLM is used as a visual scene parser. It converts an image into structured observations. The project code then computes visual information gap from those observations.
 
-The recommended open-source model is `Qwen/Qwen2.5-VL-7B-Instruct`. Use `Qwen/Qwen2.5-VL-3B-Instruct` for quick tests when compute is limited. A closed-source model can be used as a validation or teacher model, but the main pipeline should remain reproducible with an open model.
+The current pilot uses `Qwen/Qwen2.5-VL-3B-Instruct` for cost-effective poster parsing. `Qwen/Qwen2.5-VL-7B-Instruct` or another open VLM can be used as a robustness check when compute is available. A closed-source model can be used as a validation or teacher model, but the main pipeline should remain reproducible with an open model.
 
 ## VLM Output Schema
 
@@ -37,7 +37,6 @@ You are helping build an exploratory recommender system.
 Analyze the image as a visual scene. Do not rate curiosity. Do not recommend the item.
 
 Return only valid JSON with these fields:
-- item_id
 - main_objects
 - setting
 - visible_action
@@ -79,7 +78,10 @@ pip install -e ".[vlm]"
 python scripts/generate_vlm_scene_interpretations.py \
   --input data/external/tmdb_movies.csv \
   --output data/external/vlm_scene_interpretations.jsonl \
-  --model Qwen/Qwen2.5-VL-7B-Instruct
+  --model Qwen/Qwen2.5-VL-3B-Instruct \
+  --limit 3000
 ```
 
 For a fast smoke test, add `--limit 20`.
+
+The generation script resumes automatically from an existing JSONL file and skips completed `item_id`s.
