@@ -1,6 +1,6 @@
 # Visual Gap Human Annotation
 
-Use `visual_gap_annotation_50.html` to view the posters and `visual_gap_annotation_50.csv` to enter scores.
+Use `visual_gap_annotation_50.html` to view the poster set and `visual_gap_annotation_50.csv` to enter scores.
 
 Score each item from 1 to 5:
 
@@ -10,4 +10,12 @@ Score each item from 1 to 5:
 - `human_curiosity_1_5`: how strongly the poster makes you want to know what happens.
 - `human_notes`: short notes for obvious VLM errors or unusual cases.
 
-Do not try to match the VLM score. Use your own judgment from the poster first, then glance at the VLM fields only if useful.
+Do not try to match the VLM score. Use your own judgment from the poster first; the VLM fields are included for auditability, not as scoring instructions.
+
+After scoring, run:
+
+```bash
+python scripts/validate_visual_annotations.py \
+  --annotations annotation/visual_gap_annotation_50.csv \
+  --output-dir annotation
+```

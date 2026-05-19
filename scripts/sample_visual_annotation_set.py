@@ -25,6 +25,9 @@ def main() -> None:
     parser.add_argument("--n", type=int, default=50)
     parser.add_argument("--seed", type=int, default=20260520)
     parser.add_argument("--output-dir", default=str(ROOT / "annotation"))
+    parser.add_argument("--prefix", default="visual_gap_annotation_50")
+    parser.add_argument("--exclude-annotations", default=None)
+    parser.add_argument("--blind", action="store_true")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -33,14 +36,21 @@ def main() -> None:
     metadata = pd.read_csv(args.metadata)
     scenes = load_visual_interpretations(Path(args.scenes))
     frame = _build_annotation_frame(metadata, scenes)
+    if args.exclude_annotations:
+        existing = pd.read_csv(args.exclude_annotations)
+        frame = frame[~frame["item_id"].isin(existing["item_id"].astype(str))]
     sample = _stratified_sample(frame, n=args.n, seed=args.seed)
 
-    csv_path = output_dir / "visual_gap_annotation_50.csv"
-    html_path = output_dir / "visual_gap_annotation_50.html"
+    csv_path = output_dir / f"{args.prefix}.csv"
+    html_path = output_dir / f"{args.prefix}.html"
     guide_path = output_dir / "README.md"
 
-    sample.to_csv(csv_path, index=False)
-    html_path.write_text(_render_gallery(sample), encoding="utf-8")
+    if args.blind:
+        sample[_blind_annotation_columns()].to_csv(csv_path, index=False)
+        sample.to_csv(output_dir / f"{args.prefix}_key.csv", index=False)
+    else:
+        sample.to_csv(csv_path, index=False)
+    html_path.write_text(_render_gallery(sample, show_vlm=not args.blind), encoding="utf-8")
     guide_path.write_text(_render_guide(), encoding="utf-8")
 
     print(f"Wrote {csv_path}")
@@ -135,9 +145,36 @@ def _stratified_sample(frame: pd.DataFrame, n: int, seed: int) -> pd.DataFrame:
     return output
 
 
-def _render_gallery(sample: pd.DataFrame) -> str:
+def _blind_annotation_columns() -> list[str]:
+    return [
+        "annotation_id",
+        "item_id",
+        "movieId",
+        "title",
+        "genres",
+        "release_date",
+        "poster_url",
+        "overview",
+        "human_missing_context_1_5",
+        "human_visual_ambiguity_1_5",
+        "human_emotional_tension_1_5",
+        "human_curiosity_1_5",
+        "human_notes",
+    ]
+
+
+def _render_gallery(sample: pd.DataFrame, show_vlm: bool) -> str:
     rows = []
     for row in sample.itertuples(index=False):
+        vlm_block = ""
+        if show_vlm:
+            vlm_block = f"""
+                <p><strong>VLM visual gap:</strong> {row.vlm_visual_information_gap_score:.3f}
+                   · <strong>bin:</strong> {html.escape(str(row.score_bin))}</p>
+                <p><strong>VLM reason:</strong> {html.escape(row.vlm_reason)}</p>
+                <p><strong>Missing/context withheld:</strong> {html.escape(row.vlm_missing_information)}</p>
+                <p><strong>Implied question:</strong> {html.escape(row.vlm_implied_question)}</p>
+            """
         rows.append(
             f"""
             <section class="card">
@@ -145,11 +182,7 @@ def _render_gallery(sample: pd.DataFrame) -> str:
               <div class="meta">
                 <h2>{html.escape(row.annotation_id)} · {html.escape(row.title)}</h2>
                 <p><strong>Genres:</strong> {html.escape(row.genres)}</p>
-                <p><strong>VLM visual gap:</strong> {row.vlm_visual_information_gap_score:.3f}
-                   · <strong>bin:</strong> {html.escape(str(row.score_bin))}</p>
-                <p><strong>VLM reason:</strong> {html.escape(row.vlm_reason)}</p>
-                <p><strong>Missing/context withheld:</strong> {html.escape(row.vlm_missing_information)}</p>
-                <p><strong>Implied question:</strong> {html.escape(row.vlm_implied_question)}</p>
+                {vlm_block}
                 <p class="overview">{html.escape(row.overview)}</p>
                 <table>
                   <tr><th>missing context</th><th>visual ambiguity</th><th>emotional tension</th><th>curiosity</th></tr>
@@ -180,7 +213,7 @@ def _render_gallery(sample: pd.DataFrame) -> str:
 </head>
 <body>
   <h1>Visual Gap Annotation Set</h1>
-  <p class="note">Use this page to look at the posters. Enter your scores in <code>visual_gap_annotation_50.csv</code>. Score each construct from 1 to 5, where 1 means very low and 5 means very high.</p>
+  <p class="note">Use this page to look at the posters. Enter your scores in the matching CSV file. Score each construct from 1 to 5, where 1 means very low and 5 means very high.</p>
   {''.join(rows)}
 </body>
 </html>

@@ -229,6 +229,16 @@ The sample is stratified across low, middle, and high VLM visual-gap scores. Reg
 PYTHONPATH=src python scripts/sample_visual_annotation_set.py --n 50 --seed 20260520
 ```
 
+Validate the completed annotations with:
+
+```bash
+python scripts/validate_visual_annotations.py \
+  --annotations annotation/visual_gap_annotation_50.csv \
+  --output-dir annotation
+```
+
+The current pilot validation report is saved as `annotation/visual_gap_validation_results.md`.
+
 ## Current Limitations
 
 - The VLM coverage is partial: 2,998 posters, not the full TMDb-enriched set.
