@@ -32,6 +32,11 @@ def main() -> None:
     parser.add_argument("--output", required=True, help="Output JSONL path.")
     parser.add_argument("--model", default="Qwen/Qwen2.5-VL-7B-Instruct")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing output instead of resuming from it.",
+    )
     args = parser.parse_args()
 
     try:
@@ -47,6 +52,9 @@ def main() -> None:
     rows = pd.read_csv(input_path)
     if args.limit is not None:
         rows = rows.head(args.limit)
+    completed_item_ids = set() if args.overwrite else _load_completed_item_ids(output_path)
+    if completed_item_ids:
+        print(f"Resuming from {output_path}; skipping {len(completed_item_ids)} completed items.")
 
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         args.model,
@@ -56,21 +64,31 @@ def main() -> None:
     processor = AutoProcessor.from_pretrained(args.model)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with output_path.open("w") as file:
+    mode = "w" if args.overwrite else "a"
+    with output_path.open(mode) as file:
         for _, row in rows.iterrows():
             item_id = _get_item_id(row)
+            if item_id in completed_item_ids:
+                continue
+
             image_ref = str(row.get("poster_url") or row.get("image_path"))
             if not image_ref or image_ref == "nan":
                 continue
 
-            payload = interpret_image(
-                item_id=item_id,
-                image_ref=image_ref,
-                model=model,
-                processor=processor,
-                process_vision_info=process_vision_info,
-            )
+            try:
+                payload = interpret_image(
+                    item_id=item_id,
+                    image_ref=image_ref,
+                    model=model,
+                    processor=processor,
+                    process_vision_info=process_vision_info,
+                )
+            except Exception as exc:
+                print(f"Skipping {item_id} after VLM error: {exc}")
+                continue
             file.write(json.dumps(payload, ensure_ascii=True) + "\n")
+            file.flush()
+            completed_item_ids.add(item_id)
             print(f"Wrote scene interpretation for {item_id}")
 
 
@@ -151,6 +169,24 @@ def _get_item_id(row: pd.Series) -> str:
     if "movieId" in row and pd.notna(row["movieId"]):
         return str(row["movieId"])
     raise KeyError("Input CSV must include item_id or movieId.")
+
+
+def _load_completed_item_ids(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    completed = set()
+    with path.open() as file:
+        for line in file:
+            if not line.strip():
+                continue
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            item_id = payload.get("item_id")
+            if item_id is not None:
+                completed.add(str(item_id))
+    return completed
 
 
 def _normalize_payload(payload: dict) -> dict:
