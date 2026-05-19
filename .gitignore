@@ -16,3 +16,6 @@ data/external/
 .env
 *.key
 
+
+src/curiosity_reranker.egg-info/
+*.egg-info/

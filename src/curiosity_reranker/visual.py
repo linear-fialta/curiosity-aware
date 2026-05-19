@@ -19,15 +19,15 @@ def load_visual_interpretations(path: Path) -> dict[str, VisualSceneInterpretati
             payload = json.loads(line)
             scene = VisualSceneInterpretation(
                 item_id=str(payload["item_id"]),
-                main_objects=tuple(payload.get("main_objects", [])),
+                main_objects=tuple(_as_text_list(payload.get("main_objects", []))),
                 setting=str(payload.get("setting", "")),
                 visible_action=str(payload.get("visible_action", "")),
                 occluded_or_missing_information=tuple(
-                    payload.get("occluded_or_missing_information", [])
+                    _as_text_list(payload.get("occluded_or_missing_information", []))
                 ),
                 object_context_incongruity=str(payload.get("object_context_incongruity", "")),
-                genre_ambiguity=tuple(payload.get("genre_ambiguity", [])),
-                emotional_tension=tuple(payload.get("emotional_tension", [])),
+                genre_ambiguity=tuple(_as_text_list(payload.get("genre_ambiguity", []))),
+                emotional_tension=tuple(_as_text_list(payload.get("emotional_tension", []))),
                 implied_question=str(payload.get("implied_question", "")),
             )
             interpretations[scene.item_id] = scene
@@ -153,3 +153,21 @@ def _tokens(text: str) -> set[str]:
         for token in re.findall(r"[a-zA-Z]+", text.lower())
         if len(token) > 2 and token not in stopwords
     }
+
+
+def _as_text_list(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [f"{key}: {val}" for key, val in value.items()]
+    if isinstance(value, list | tuple):
+        flattened = []
+        for item in value:
+            if isinstance(item, dict):
+                flattened.extend(f"{key}: {val}" for key, val in item.items())
+            elif item is not None:
+                flattened.append(str(item))
+        return flattened
+    return [str(value)]
