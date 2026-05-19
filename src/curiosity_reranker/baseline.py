@@ -25,6 +25,7 @@ def leave_one_out_split(
     ratings: pd.DataFrame,
     min_interactions: int = 5,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # Use the latest interaction as the held-out item to mimic next-item evaluation.
     eligible_users = ratings.groupby("userId").size()
     eligible_users = eligible_users[eligible_users >= min_interactions].index
     filtered = ratings[ratings["userId"].isin(eligible_users)].copy()
@@ -57,6 +58,7 @@ def fit_matrix_factorization(
     item_bias = np.zeros(len(items))
     global_mean = float(train_ratings["rating"].mean())
 
+    # Plain SGD is sufficient here and keeps the baseline fully inspectable.
     training_rows = [
         (user_to_idx[int(row.userId)], item_to_idx[int(row.movieId)], float(row.rating))
         for row in train_ratings.itertuples(index=False)
@@ -129,7 +131,7 @@ def generate_mf_candidates(
     rows = []
     for user_id in users:
         seen = train_items_by_user.get(user_id, set())
-        candidate_items = list(all_model_items - seen)
+        candidate_items = sorted(all_model_items - seen)
         scores = [
             (item_id, predict_rating(model, int(user_id), int(item_id)))
             for item_id in candidate_items
@@ -138,6 +140,7 @@ def generate_mf_candidates(
         top_scores = scores[:candidates_per_user]
         heldout_item = int(test_by_user[user_id])
 
+        # Ensure every user has an evaluable held-out item in the reranking pool.
         if heldout_item not in {item_id for item_id, _ in top_scores} and heldout_item in all_model_items:
             top_scores.append((heldout_item, predict_rating(model, int(user_id), heldout_item)))
 

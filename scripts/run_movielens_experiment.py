@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -18,7 +19,7 @@ from curiosity_reranker.comparison import (
     serendipity_rerank_candidates,
 )
 from curiosity_reranker.features import genre_unexpectedness
-from curiosity_reranker.metrics import summarize_rankings
+from curiosity_reranker.metrics import bootstrap_metric_intervals, summarize_rankings
 from curiosity_reranker.rerank import rerank_candidates
 from curiosity_reranker.vig_rerank import VIGRerankConfig, vig_rerank_candidates
 from curiosity_reranker.visual import attach_visual_interpretations, load_visual_interpretations
@@ -37,6 +38,8 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--factors", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--bootstrap-samples", type=int, default=1000)
     parser.add_argument("--output-dir", default=str(ROOT / "data" / "processed" / "movielens_experiment"))
     args = parser.parse_args()
 
@@ -46,6 +49,7 @@ def main() -> None:
         train,
         n_factors=args.factors,
         epochs=args.epochs,
+        seed=args.seed,
     )
     candidates = generate_mf_candidates(
         model,
@@ -64,6 +68,7 @@ def main() -> None:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    _write_run_config(output_dir / "run_config.json", args)
     candidates.to_csv(output_dir / "mf_candidates.csv", index=False)
 
     rankings = {name: {} for name in _variant_names()}
@@ -95,13 +100,26 @@ def main() -> None:
         )
 
     summary_rows = []
+    interval_rows = []
     for variant, ranked_by_user in rankings.items():
         row = {"variant": variant, **summarize_rankings(ranked_by_user, args.top_k)}
         summary_rows.append(row)
+        interval_rows.append(
+            {
+                "variant": variant,
+                **bootstrap_metric_intervals(
+                    ranked_by_user,
+                    args.top_k,
+                    n_resamples=args.bootstrap_samples,
+                    seed=args.seed,
+                ),
+            }
+        )
         _save_rankings(output_dir / f"{variant}_rankings.csv", ranked_by_user)
 
     summary = pd.DataFrame(summary_rows)
     summary.to_csv(output_dir / "summary_metrics.csv", index=False)
+    pd.DataFrame(interval_rows).to_csv(output_dir / "summary_metric_intervals.csv", index=False)
     print(summary.to_string(index=False))
     print(f"Wrote experiment outputs to {output_dir}")
 
@@ -123,6 +141,7 @@ def _attach_zero_visual_features(candidates: pd.DataFrame) -> pd.DataFrame:
     copied = candidates.copy()
     copied["visual_information_gap_score"] = 0.0
     copied["cross_modal_gap_score"] = 0.0
+    copied["visual_scene_available"] = 0
     copied["visual_reason"] = "no VLM scene interpretation is available"
     return copied
 
@@ -131,6 +150,7 @@ def _zero_visual_gap(candidates: pd.DataFrame) -> pd.DataFrame:
     copied = candidates.copy()
     copied["visual_information_gap_score"] = 0.0
     copied["cross_modal_gap_score"] = 0.0
+    copied["visual_scene_available"] = 0
     copied["visual_reason"] = "visual gap ablated"
     return copied
 
@@ -154,6 +174,22 @@ def _save_rankings(path: Path, ranked_by_user: dict[int, pd.DataFrame]) -> None:
         copied["rank"] = range(1, len(copied) + 1)
         rows.append(copied)
     pd.concat(rows, ignore_index=True).to_csv(path, index=False)
+
+
+def _write_run_config(path: Path, args: argparse.Namespace) -> None:
+    payload = {
+        "movielens_dir": args.movielens_dir,
+        "metadata": args.metadata,
+        "scenes": args.scenes,
+        "max_users": args.max_users,
+        "candidate_k": args.candidate_k,
+        "top_k": args.top_k,
+        "epochs": args.epochs,
+        "factors": args.factors,
+        "seed": args.seed,
+        "bootstrap_samples": args.bootstrap_samples,
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

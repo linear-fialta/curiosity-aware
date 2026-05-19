@@ -81,6 +81,7 @@ def _score_candidates(
         text_gap = text_information_gap_score(item)
         cross_modal_gap = normalize_score(float(row.get("cross_modal_gap_score", 0.0)))
         taste_distance = 1.0 - genre_overlap(item.genres, user.preferred_genres)
+        # The WITS result suggests a middle region: neither redundant nor too remote.
         sweet_spot = _sweet_spot_score(
             taste_distance,
             target=config.target_distance,
@@ -88,6 +89,7 @@ def _score_candidates(
         )
 
         vig_item_score = (
+            # Multiplication makes each component a constraint rather than a loose bonus.
             (relevance + config.epsilon) ** config.relevance_power
             * (visual_gap + config.epsilon) ** config.visual_gap_power
             * (text_gap + config.epsilon) ** config.text_gap_power

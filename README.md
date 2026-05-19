@@ -1,6 +1,6 @@
 # Visual Information Gap Reranker
 
-This repository implements a reproducible pilot study for exploratory recommendation. It extends my WITS 2025 paper, **"Trailers or Thieves? How Content Similarity Affects Continuance and Exploration for Condensed Clips in Algorithmic Feeds"**, from text-based narrative gaps in algorithmic feeds to image-based information gaps in recommender-system design.
+This repository implements a reproducible pilot study for exploratory recommendation. It extends the author's WITS 2025 paper, **"Trailers or Thieves? How Content Similarity Affects Continuance and Exploration for Condensed Clips in Algorithmic Feeds"**, from text-based narrative gaps in algorithmic feeds to image-based information gaps in recommender-system design.
 
 The project asks whether movie posters contain structured visual cues that help explain why a user may explore an item that is relevant, but not merely redundant. The current implementation uses MovieLens ratings, TMDb metadata, Qwen2.5-VL scene parsing, a matrix-factorization candidate generator, and several reranking baselines.
 
@@ -53,6 +53,7 @@ Candidates + visual features
 │   ├── construct_definition.md
 │   ├── data_plan.md
 │   ├── experiment_plan.md
+│   ├── pilot_results.md
 │   ├── project_proposal.md
 │   └── vlm_image_interpretation.md
 ├── scripts/
@@ -133,7 +134,8 @@ PYTHONPATH=src python scripts/run_movielens_experiment.py \
   --candidate-k 100 \
   --top-k 10 \
   --epochs 8 \
-  --factors 32
+  --factors 32 \
+  --seed 42
 ```
 
 Outputs:
@@ -141,7 +143,9 @@ Outputs:
 ```text
 data/processed/movielens_experiment/
 ├── mf_candidates.csv
+├── run_config.json
 ├── summary_metrics.csv
+├── summary_metric_intervals.csv
 └── *_rankings.csv
 ```
 
@@ -175,7 +179,7 @@ The experiment compares:
 - `vig_no_visual`: VIG-Rerank with visual and cross-modal gap removed.
 - `vig_no_listwise`: VIG-Rerank without redundancy penalty or coverage bonus.
 
-## Current Pilot Result
+## Current Pilot
 
 The current local pilot uses:
 
@@ -183,26 +187,11 @@ The current local pilot uses:
 - 9,622 TMDb-enriched movies
 - 2,998 Qwen2.5-VL parsed posters
 - 100 users, 100 candidates per user, top-10 evaluation
+- seed 42, with bootstrap intervals saved for the ranking metrics
 
-Latest metrics:
+The latest run shows that visual-gap-aware methods outperform MF, MMR, serendipity, and no-visual ablations on HitRate@10. Direct visual-gap ranking remains a strong baseline; VIG-Rerank matches its HitRate@10 while imposing a theoretically motivated sweet-spot structure.
 
-| variant | HitRate@10 | NDCG@10 | avg visual gap | avg novelty | genre diversity |
-|---|---:|---:|---:|---:|---:|
-| `mf_relevance` | 0.02 | 0.0069 | 0.6788 | 0.7834 | 0.7388 |
-| `mmr` | 0.02 | 0.0100 | 0.6698 | 0.8475 | 0.9526 |
-| `serendipity` | 0.00 | 0.0000 | 0.6412 | 0.9921 | 0.7965 |
-| `linear_gap` | 0.03 | 0.0125 | 0.8350 | 0.5905 | 0.7016 |
-| `direct_vlm_proxy` | 0.09 | 0.0408 | 0.8680 | 0.7987 | 0.8533 |
-| `vig_rerank` | 0.09 | 0.0367 | 0.8179 | 0.5320 | 0.6752 |
-| `vig_no_visual` | 0.06 | 0.0273 | 0.0000 | 0.8420 | 0.9621 |
-| `vig_no_listwise` | 0.08 | 0.0355 | 0.8168 | 0.5243 | 0.6436 |
-
-Interpretation:
-
-- Visual-gap-aware methods outperform MF, MMR, serendipity, and no-visual ablations in this pilot.
-- Direct visual-gap ranking is a strong baseline; VIG-Rerank matches its HitRate@10 while imposing a theoretically motivated sweet-spot structure.
-- Generic novelty performs poorly: the serendipity baseline has the highest novelty but zero HitRate@10.
-- The listwise component improves conceptual control over redundancy, but its relevance-diversity trade-off needs further tuning.
+See [docs/pilot_results.md](docs/pilot_results.md) for the full table and interpretation.
 
 ## Current Limitations
 
@@ -210,4 +199,3 @@ Interpretation:
 - Poster-level visual interpretation is noisy and should be validated by human coding on a sample.
 - Offline HitRate/NDCG evaluate held-out MovieLens behavior, not perceived curiosity directly.
 - The next step is a small human evaluation comparing baseline and VIG-ranked lists.
-

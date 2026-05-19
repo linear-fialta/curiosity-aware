@@ -32,12 +32,13 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--factors", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output", default=str(ROOT / "data" / "processed" / "vig_tuning_results.csv"))
     args = parser.parse_args()
 
     ratings, movies = load_movielens_with_optional_metadata(args.movielens_dir, args.metadata)
     train, test = leave_one_out_split(ratings)
-    model = fit_matrix_factorization(train, n_factors=args.factors, epochs=args.epochs)
+    model = fit_matrix_factorization(train, n_factors=args.factors, epochs=args.epochs, seed=args.seed)
     candidates = generate_mf_candidates(
         model,
         train,
@@ -101,6 +102,7 @@ def main() -> None:
         "avg_visual_gap",
         "avg_novelty",
         "genre_diversity",
+        "visual_scene_coverage",
         "selection_score",
         "relevance_power",
         "visual_gap_power",

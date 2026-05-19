@@ -5,6 +5,7 @@ import pandas as pd
 from curiosity_reranker.rerank import rerank_candidates
 from curiosity_reranker.schema import UserProfile
 from curiosity_reranker.vig_rerank import vig_rerank_candidates
+from curiosity_reranker.metrics import bootstrap_metric_intervals, summarize_rankings
 from curiosity_reranker.visual import attach_visual_interpretations, visual_information_gap_score
 from curiosity_reranker.schema import VisualSceneInterpretation
 from curiosity_reranker.baseline import fit_matrix_factorization, generate_mf_candidates, leave_one_out_split
@@ -83,6 +84,8 @@ def test_attach_visual_interpretations_adds_gap_columns() -> None:
     enriched = attach_visual_interpretations(candidates, {"1": scene})
     assert "visual_information_gap_score" in enriched.columns
     assert "cross_modal_gap_score" in enriched.columns
+    assert "visual_scene_available" in enriched.columns
+    assert enriched.iloc[0]["visual_scene_available"] == 1
     assert "visual_reason" in enriched.columns
 
 
@@ -156,3 +159,35 @@ def test_matrix_factorization_generates_candidates() -> None:
 
     assert not candidates.empty
     assert {"user_id", "item_id", "baseline_score", "is_relevant"}.issubset(candidates.columns)
+
+
+def test_metric_summary_reports_visual_coverage_and_intervals() -> None:
+    ranked = pd.DataFrame(
+        [
+            {
+                "item_id": "1",
+                "genres": "Drama",
+                "baseline_score": 0.9,
+                "unexpectedness_score": 0.2,
+                "visual_information_gap_score": 0.8,
+                "visual_scene_available": 1,
+                "is_relevant": 1,
+            },
+            {
+                "item_id": "2",
+                "genres": "Comedy",
+                "baseline_score": 0.7,
+                "unexpectedness_score": 0.6,
+                "visual_information_gap_score": 0.0,
+                "visual_scene_available": 0,
+                "is_relevant": 0,
+            },
+        ]
+    )
+
+    summary = summarize_rankings({1: ranked}, k=2)
+    intervals = bootstrap_metric_intervals({1: ranked}, k=2, n_resamples=5, seed=7)
+
+    assert summary["visual_scene_coverage"] == 0.5
+    assert "hit_rate_ci_low" in intervals
+    assert "visual_scene_coverage_ci_high" in intervals

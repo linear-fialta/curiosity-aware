@@ -38,6 +38,7 @@ def visual_information_gap_score(scene: VisualSceneInterpretation | None) -> flo
     if scene is None:
         return 0.0
 
+    # Counts are capped because the VLM sometimes over-enumerates obvious details.
     missing_info = normalize_score(len(scene.occluded_or_missing_information) / 3.0)
     unresolved_action = 1.0 if scene.visible_action and scene.implied_question else 0.0
     incongruity = 1.0 if scene.object_context_incongruity else 0.0
@@ -108,6 +109,7 @@ def attach_visual_interpretations(
         rows.append(
             {
                 **row.to_dict(),
+                "visual_scene_available": int(scene is not None),
                 "visual_information_gap_score": visual_information_gap_score(scene),
                 "cross_modal_gap_score": cross_modal_gap_score(
                     scene,

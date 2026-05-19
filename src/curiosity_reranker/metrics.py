@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 
+import numpy as np
 import pandas as pd
 
 
@@ -48,30 +49,80 @@ def ndcg_at_k(ranked_items: pd.DataFrame, k: int) -> float:
 
 
 def summarize_rankings(ranked_by_user: dict[int, pd.DataFrame], k: int) -> dict[str, float]:
-    if not ranked_by_user:
+    rows = per_user_metric_rows(ranked_by_user, k)
+    if rows.empty:
+        return _empty_metric_summary()
+
+    return {key: float(rows[key].mean()) for key in _metric_names()}
+
+
+def bootstrap_metric_intervals(
+    ranked_by_user: dict[int, pd.DataFrame],
+    k: int,
+    n_resamples: int = 1000,
+    seed: int = 42,
+) -> dict[str, float]:
+    rows = per_user_metric_rows(ranked_by_user, k)
+    if rows.empty:
         return {
-            "hit_rate": 0.0,
-            "ndcg": 0.0,
-            "avg_baseline_relevance": 0.0,
-            "avg_visual_gap": 0.0,
-            "avg_novelty": 0.0,
-            "genre_diversity": 0.0,
+            f"{metric}_{bound}": 0.0
+            for metric in _metric_names()
+            for bound in ("ci_low", "ci_high")
         }
 
+    n_resamples = max(1, n_resamples)
+    rng = np.random.default_rng(seed)
+    values = rows[_metric_names()].to_numpy(dtype=float)
+    intervals: dict[str, float] = {}
+    for metric_idx, metric in enumerate(_metric_names()):
+        boot_means = []
+        for _ in range(n_resamples):
+            sample_idx = rng.integers(0, len(values), size=len(values))
+            boot_means.append(float(values[sample_idx, metric_idx].mean()))
+        intervals[f"{metric}_ci_low"] = float(np.quantile(boot_means, 0.025))
+        intervals[f"{metric}_ci_high"] = float(np.quantile(boot_means, 0.975))
+    return intervals
+
+
+def per_user_metric_rows(ranked_by_user: dict[int, pd.DataFrame], k: int) -> pd.DataFrame:
     rows = []
-    for ranked in ranked_by_user.values():
+    for user_id, ranked in ranked_by_user.items():
         top = ranked.head(k)
         rows.append(
             {
+                "user_id": user_id,
                 "hit_rate": hit_rate_at_k(ranked, k),
                 "ndcg": ndcg_at_k(ranked, k),
                 "avg_baseline_relevance": float(top["baseline_score"].mean()),
-                "avg_visual_gap": float(top.get("visual_information_gap_score", 0).mean()),
+                "avg_visual_gap": _column_mean(top, "visual_information_gap_score"),
                 "avg_novelty": average_novelty(top),
                 "genre_diversity": intra_list_genre_diversity(top),
+                "visual_scene_coverage": _column_mean(top, "visual_scene_available"),
             }
         )
-    return {key: float(pd.DataFrame(rows)[key].mean()) for key in rows[0]}
+    return pd.DataFrame(rows)
+
+
+def _metric_names() -> list[str]:
+    return [
+        "hit_rate",
+        "ndcg",
+        "avg_baseline_relevance",
+        "avg_visual_gap",
+        "avg_novelty",
+        "genre_diversity",
+        "visual_scene_coverage",
+    ]
+
+
+def _empty_metric_summary() -> dict[str, float]:
+    return {metric: 0.0 for metric in _metric_names()}
+
+
+def _column_mean(frame: pd.DataFrame, column: str) -> float:
+    if column not in frame:
+        return 0.0
+    return float(frame[column].mean())
 
 
 def _log2(value: int) -> float:
